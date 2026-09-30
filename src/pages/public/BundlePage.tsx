@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
 import { Bundle, Product } from '../../types';
 import { SafeImage } from '../../components/ui/SafeImage';
@@ -8,6 +9,7 @@ import { ArrowLeft, ArrowRight, ShieldCheck, Check, Layers } from 'lucide-react'
 
 export const BundlePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { settings } = useSettings();
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,11 +21,11 @@ export const BundlePage: React.FC = () => {
       if (b) {
         setBundle(b);
         analytics.trackProductView(b.id, b.name);
-        document.title = `${b.name} | NextWin AI Library`;
+        document.title = `${b.name} | ${settings.site_name}`;
       }
       setIsLoading(false);
     });
-  }, [slug]);
+  }, [slug, settings.site_name]);
 
   if (isLoading) {
     return (

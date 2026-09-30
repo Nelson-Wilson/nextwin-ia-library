@@ -53,12 +53,20 @@ export const AdminDashboardPage: React.FC = () => {
   const totalViewsCount = events.filter(e => e.event_name === 'page_view' || e.event_name === 'product_view').length;
 
   // Traffic origins calculated from events and leads
-  const trafficOrigins = [
-    { name: 'TikTok', count: 1240, percentage: 42, color: 'bg-rose-500' },
-    { name: 'Facebook Ads', count: 850, percentage: 29, color: 'bg-blue-600' },
-    { name: 'Instagram', count: 520, percentage: 18, color: 'bg-pink-500' },
-    { name: 'Google Search', count: 340, percentage: 11, color: 'bg-emerald-500' }
-  ];
+  const visitsBySource = events.reduce<Record<string, number>>((totals, event) => {
+    if (event.source && (event.event_name === 'page_view' || event.event_name === 'product_view')) {
+      totals[event.source] = (totals[event.source] || 0) + 1;
+    }
+    return totals;
+  }, {});
+  const totalVisitsBySource = Object.values(visitsBySource).reduce((total, visits) => total + visits, 0);
+  const sourceColors = ['bg-rose-500', 'bg-blue-600', 'bg-pink-500', 'bg-emerald-500'];
+  const trafficOrigins = Object.entries(visitsBySource).map(([name, count], index) => ({
+    name,
+    count,
+    percentage: totalVisitsBySource ? Math.round((count / totalVisitsBySource) * 100) : 0,
+    color: sourceColors[index % sourceColors.length]
+  }));
 
   return (
     <div className="space-y-8">
@@ -138,7 +146,7 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
           <div>
             <div className="text-2xl font-extrabold text-white font-display tabular-nums">
-              {checkoutClicksCount || 142}
+              {checkoutClicksCount}
             </div>
             <div className="text-[11px] text-slate-400 mt-1">
               Redirecionamentos EscalePay

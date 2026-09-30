@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
 import { Product } from '../../types';
 import { ProductHero } from '../../components/product/ProductHero';
@@ -18,6 +19,7 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { settings } = useSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -32,7 +34,7 @@ export const ProductPage: React.FC = () => {
         setProduct(prod);
         analytics.trackProductView(prod.id, prod.name);
         // Dynamic SEO Document Title & Description
-        document.title = prod.seo_title || `${prod.name} | NextWin AI Library`;
+        document.title = prod.seo_title || `${prod.name} | ${settings.site_name}`;
         const metaDesc = document.querySelector('meta[name="description"]');
         if (metaDesc && prod.seo_description) {
           metaDesc.setAttribute('content', prod.seo_description);
@@ -42,7 +44,7 @@ export const ProductPage: React.FC = () => {
       }
       setIsLoading(false);
     });
-  }, [slug]);
+  }, [slug, settings.site_name]);
 
   if (isLoading) {
     return (

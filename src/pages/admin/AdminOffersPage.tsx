@@ -9,7 +9,7 @@ export const AdminOffersPage: React.FC = () => {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [discountType, setDiscountType] = useState<Offer['discount_type']>('promotional_price');
-  const [discountValue, setDiscountValue] = useState<number>(147);
+  const [discountValue, setDiscountValue] = useState<number | ''>('');
   const [productId, setProductId] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 

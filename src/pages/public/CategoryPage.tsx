@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
 import { Product, Category } from '../../types';
 import { ProductCard } from '../../components/marketing/ProductCard';
@@ -7,6 +8,7 @@ import { ArrowLeft, FolderOpen } from 'lucide-react';
 
 export const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { settings } = useSettings();
   const [category, setCategory] = useState<Category | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,11 +22,11 @@ export const CategoryPage: React.FC = () => {
       if (currentCat) {
         setCategory(currentCat);
         setProducts(prods.filter(p => p.category_id === currentCat.id && p.active && p.published));
-        document.title = `${currentCat.name} | NextWin AI Library`;
+        document.title = `${currentCat.name} | ${settings.site_name}`;
       }
       setIsLoading(false);
     });
-  }, [slug]);
+  }, [slug, settings.site_name]);
 
   if (isLoading) {
     return (

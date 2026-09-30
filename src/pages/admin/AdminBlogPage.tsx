@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../lib/database';
 import { BlogPost } from '../../types';
+import { ImageField } from '../../components/admin/ImageField';
 import { Plus, Trash2, Edit, FileText, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,11 +12,12 @@ export const AdminBlogPage: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
-  const [category, setCategory] = useState('Inteligência Artificial');
-  const [author, setAuthor] = useState('Equipe NextWin');
+  const [category, setCategory] = useState('');
+  const [author, setAuthor] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [coverImage, setCoverImage] = useState('/src/assets/images/hero_nextwin_library_1790756544243.jpg');
+  const [coverImage, setCoverImage] = useState('');
+  const [coverImageValid, setCoverImageValid] = useState(false);
 
   const loadData = async () => {
     const data = await db.getBlogPosts();
@@ -35,12 +37,13 @@ export const AdminBlogPage: React.FC = () => {
     setExcerpt(p.excerpt);
     setContent(p.content);
     setCoverImage(p.cover_image);
+    setCoverImageValid(Boolean(p.cover_image));
     setIsEditing(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title) return;
+    if (!title || !coverImageValid) return;
 
     await db.saveBlogPost({
       id: editingId || undefined,
@@ -80,8 +83,11 @@ export const AdminBlogPage: React.FC = () => {
               setEditingId(null);
               setTitle('');
               setSlug('');
+              setCategory('');
+              setAuthor('');
               setExcerpt('');
               setContent('');
+              setCoverImage('');
               setIsEditing(true);
             }}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors"
@@ -150,15 +156,15 @@ export const AdminBlogPage: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Capa (URL da Imagem)</label>
-            <input
-              type="text"
-              value={coverImage}
-              onChange={(e) => setCoverImage(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-400"
-            />
-          </div>
+          <ImageField
+            label="Capa do artigo *"
+            folder="blog"
+            value={coverImage}
+            onChange={setCoverImage}
+            onValidityChange={setCoverImageValid}
+            recordId={editingId || undefined}
+            required
+          />
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">Resumo (Excerpt)</label>

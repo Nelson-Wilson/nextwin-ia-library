@@ -23,12 +23,20 @@ export const AdminAnalyticsPage: React.FC = () => {
     ? ((checkoutClicks / productViews) * 100).toFixed(1) 
     : '0';
 
-  const channels = [
-    { name: 'TikTok (Vídeos & Orgânico)', visits: 1240, share: 42, color: 'bg-rose-500' },
-    { name: 'Facebook Ads (Tráfego Pago)', visits: 850, share: 29, color: 'bg-blue-600' },
-    { name: 'Instagram (Reels & Stories)', visits: 520, share: 18, color: 'bg-pink-500' },
-    { name: 'Google (Busca Orgânica & Ads)', visits: 340, share: 11, color: 'bg-emerald-500' }
-  ];
+  const visitsByChannel = events.reduce<Record<string, number>>((totals, event) => {
+    if (event.source && (event.event_name === 'page_view' || event.event_name === 'product_view')) {
+      totals[event.source] = (totals[event.source] || 0) + 1;
+    }
+    return totals;
+  }, {});
+  const totalChannelVisits = Object.values(visitsByChannel).reduce((total, visits) => total + visits, 0);
+  const channelColors = ['bg-rose-500', 'bg-blue-600', 'bg-pink-500', 'bg-emerald-500'];
+  const channels = Object.entries(visitsByChannel).map(([name, visits], index) => ({
+    name,
+    visits,
+    share: totalChannelVisits ? Math.round((visits / totalChannelVisits) * 100) : 0,
+    color: channelColors[index % channelColors.length]
+  }));
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -43,19 +51,19 @@ export const AdminAnalyticsPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
           <p className="text-xs font-semibold text-slate-400 uppercase">Visualizações Página</p>
-          <p className="text-2xl font-black text-white font-display tabular-nums">{pageViews || 3420}</p>
+          <p className="text-2xl font-black text-white font-display tabular-nums">{pageViews}</p>
           <p className="text-[11px] text-slate-500">Métricas acumuladas</p>
         </div>
 
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
           <p className="text-xs font-semibold text-slate-400 uppercase">Acessos a Produtos</p>
-          <p className="text-2xl font-black text-indigo-400 font-display tabular-nums">{productViews || 1890}</p>
+          <p className="text-2xl font-black text-indigo-400 font-display tabular-nums">{productViews}</p>
           <p className="text-[11px] text-slate-500">Visualizações em /produto/*</p>
         </div>
 
         <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
           <p className="text-xs font-semibold text-slate-400 uppercase">Cliques no Checkout</p>
-          <p className="text-2xl font-black text-amber-400 font-display tabular-nums">{checkoutClicks || 240}</p>
+          <p className="text-2xl font-black text-amber-400 font-display tabular-nums">{checkoutClicks}</p>
           <p className="text-[11px] text-slate-500">Intenção de compra EscalePay</p>
         </div>
 

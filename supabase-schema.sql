@@ -2,7 +2,7 @@
 -- NEXTWIN AI LIBRARY — SUPABASE DATABASE MIGRATIONS & SCHEMA
 -- ==============================================================================
 -- Executar este script no SQL Editor do seu projeto Supabase para criar
--- todas as tabelas, índices, triggers, RLS policies e dados iniciais.
+-- tabelas, índices, triggers e policies RLS.
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS public.testimonials (
     role TEXT,
     company TEXT,
     text TEXT NOT NULL,
-    rating INT DEFAULT 5,
+    rating INT,
     product_id TEXT REFERENCES public.products(id) ON DELETE SET NULL,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS public.coupons (
     code TEXT NOT NULL UNIQUE,
     discount_type TEXT NOT NULL DEFAULT 'percentage',
     discount_value NUMERIC(10, 2) NOT NULL,
-    max_uses INT DEFAULT 100,
+    max_uses INT,
     used_count INT DEFAULT 0,
     expires_at TIMESTAMPTZ,
     active BOOLEAN DEFAULT TRUE
@@ -229,8 +229,8 @@ CREATE TABLE IF NOT EXISTS public.blog_posts (
     excerpt TEXT NOT NULL,
     content TEXT NOT NULL,
     cover_image TEXT NOT NULL,
-    author TEXT NOT NULL DEFAULT 'Equipe NextWin',
-    category TEXT NOT NULL DEFAULT 'Inteligência Artificial',
+    author TEXT NOT NULL,
+    category TEXT NOT NULL,
     published BOOLEAN DEFAULT TRUE,
     published_at DATE DEFAULT CURRENT_DATE,
     seo_title TEXT,
@@ -331,95 +331,35 @@ CREATE POLICY "Admin full analytics" ON public.analytics_events FOR ALL USING (p
 CREATE POLICY "Admin full settings" ON public.site_settings FOR ALL USING (public.is_admin());
 CREATE POLICY "User read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id OR public.is_admin());
 
--- ==============================================================================
--- 19. SEED DATA INICIAL
--- ==============================================================================
+-- 19. STORAGE DE IMAGENS
+CREATE OR REPLACE FUNCTION public.can_manage_media()
+RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.profiles
+        WHERE id = auth.uid()
+          AND role IN ('admin', 'editor')
+    );
+$$ LANGUAGE SQL SECURITY DEFINER SET search_path = public;
 
--- Categories
-INSERT INTO public.categories (id, name, slug, description, active) VALUES
-('cat-ia', 'Inteligência Artificial', 'ia', 'Ebooks e guias práticos sobre modelos de IA.', true),
-('cat-negocios', 'Negócios Digitais', 'negocios-digitais', 'Monetização e serviços escaláveis com tecnologia.', true),
-('cat-produtividade', 'Produtividade', 'produtividade', 'Automação de rotinas com agentes inteligentes.', true),
-('cat-prompts', 'Prompts & Templates', 'prompts', 'Comandos avançados calibrados para alta performance.', true)
-ON CONFLICT (slug) DO NOTHING;
-
--- Initial Products (147 MT, old 497 MT, Combo 297 MT)
-INSERT INTO public.products (id, name, slug, short_description, full_description, product_type, price, old_price, currency, cover_image, checkout_url, category_id, featured, active, published, seo_title, seo_description)
-VALUES
-(
-    'prod-ia-lucrativa',
-    'IA Lucrativa',
-    'ia-lucrativa',
-    'Aprenda como utilizar IA para criar novos serviços, produtos digitais e fontes de renda escaláveis.',
-    'O guia definitivo para transformar inteligência artificial em valor financeiro real. Estruturação de ofertas de consultoria, criação de infoprodutos em poucas horas e automação de entregas comerciais.',
-    'ebook',
-    147.00,
-    497.00,
-    'MT',
-    '/src/assets/images/cover_ia_lucrativa_1790756556925.jpg',
-    'https://checkout.escalepay.com/pay/ia-lucrativa',
-    'cat-ia',
-    true,
-    true,
-    true,
-    'IA Lucrativa — Aprenda a Usar IA para Criar Novas Oportunidades',
-    'Guia prático e direto para dominar inteligência artificial e construir novas fontes de receita.'
-),
-(
-    'prod-chatgpt-pratica',
-    'ChatGPT na Prática',
-    'chatgpt-na-pratica',
-    'O método definitivo de engenharia de prompts para economizar mais de 15 horas por semana.',
-    'Aprenda Chain-of-Thought, restrições cognitivas e frameworks para criar artigos, relatórios executivos e códigos em minutos.',
-    'prompt_pack',
-    147.00,
-    497.00,
-    'MT',
-    '/src/assets/images/cover_chatgpt_pratica_1790756568990.jpg',
-    'https://checkout.escalepay.com/pay/chatgpt-na-pratica',
-    'cat-prompts',
-    true,
-    true,
-    true,
-    'ChatGPT na Prática — Manual Definitivo de Engenharia de Prompts',
-    'Extraia 10x mais inteligência dos modelos generativos com prompts calibrados.'
-),
-(
-    'prod-automacao-ia',
-    'Automação com IA',
-    'automacao-com-ia',
-    'Crie fluxos de trabalho autônomos, bots inteligentes e agentes integrados sem código.',
-    'Conecte Make, webhooks, WhatsApp e modelos de linguagem para criar agentes digitais que atendem clientes e executam tarefas repetitivas.',
-    'course',
-    197.00,
-    597.00,
-    'MT',
-    '/src/assets/images/hero_nextwin_library_1790756544243.jpg',
-    'https://checkout.escalepay.com/pay/automacao-ia',
-    'cat-produtividade',
-    true,
-    true,
-    true,
-    'Automação com IA — Agentes e Fluxos Autônomos sem Código',
-    'Automatize tarefas operacionais repetitivas e ganhe escala.'
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'nextwin-library-media',
+    'nextwin-library-media',
+    TRUE,
+    5242880,
+    ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
--- Initial Bundle
-INSERT INTO public.bundles (id, name, slug, description, cover_image, price, old_price, currency, checkout_url, featured, active, product_ids)
-VALUES
-(
-    'bundle-combo-ia-completa',
-    'Combo IA Completa',
-    'combo-ia-completa',
-    'Leve os 3 produtos digitais premium (IA Lucrativa + ChatGPT na Prática + Automação com IA) com mais de 50% de desconto e bônus exclusivos.',
-    '/src/assets/images/cover_combo_ia_1790756580134.jpg',
-    297.00,
-    594.00,
-    'MT',
-    'https://checkout.escalepay.com/pay/combo-ia-completa',
-    true,
-    true,
-    '["prod-ia-lucrativa", "prod-chatgpt-pratica", "prod-automacao-ia"]'::jsonb
-)
-ON CONFLICT (slug) DO NOTHING;
+CREATE POLICY "Public read library media" ON storage.objects
+FOR SELECT USING (bucket_id = 'nextwin-library-media');
+
+CREATE POLICY "Admins upload library media" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (
+    bucket_id = 'nextwin-library-media'
+    AND public.can_manage_media()
+    AND split_part(name, '/', 1) IN ('products', 'bundles', 'banners', 'categories', 'blog')
+    AND split_part(name, '/', 2) = auth.uid()::TEXT
+);

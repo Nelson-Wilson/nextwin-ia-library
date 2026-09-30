@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
 import { Bundle, Product } from '../../types';
 import { SafeImage } from '../../components/ui/SafeImage';
+import { ImageField } from '../../components/admin/ImageField';
 import { Plus, Trash2, Edit, Check, Layers, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminBundlesPage: React.FC = () => {
+  const { settings } = useSettings();
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,12 +19,14 @@ export const AdminBundlesPage: React.FC = () => {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [desc, setDesc] = useState('');
-  const [price, setPrice] = useState(297);
-  const [oldPrice, setOldPrice] = useState(594);
+  const [price, setPrice] = useState<number | ''>('');
+  const [oldPrice, setOldPrice] = useState<number | ''>('');
   const [checkoutUrl, setCheckoutUrl] = useState('https://checkout.escalepay.com/pay/');
-  const [coverImage, setCoverImage] = useState('/src/assets/images/cover_combo_ia_1790756580134.jpg');
+  const [currency, setCurrency] = useState(settings.default_currency);
+  const [coverImage, setCoverImage] = useState('');
+  const [coverImageValid, setCoverImageValid] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [featured, setFeatured] = useState(true);
+  const [featured, setFeatured] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -35,6 +40,13 @@ export const AdminBundlesPage: React.FC = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!editingId) {
+      setCurrency(settings.default_currency);
+      setCheckoutUrl(settings.escalepay_default_url);
+    }
+  }, [editingId, settings.default_currency, settings.escalepay_default_url]);
+
   const handleEdit = (bundle: Bundle) => {
     setEditingId(bundle.id);
     setName(bundle.name);
@@ -44,6 +56,7 @@ export const AdminBundlesPage: React.FC = () => {
     setOldPrice(bundle.old_price || 0);
     setCheckoutUrl(bundle.checkout_url);
     setCoverImage(bundle.cover_image);
+    setCoverImageValid(Boolean(bundle.cover_image));
     setSelectedProductIds(bundle.product_ids || []);
     setFeatured(bundle.featured);
     setIsEditing(true);
@@ -51,7 +64,7 @@ export const AdminBundlesPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !coverImageValid) return;
 
     await db.saveBundle({
       id: editingId || undefined,
@@ -60,7 +73,7 @@ export const AdminBundlesPage: React.FC = () => {
       description: desc,
       price: Number(price),
       old_price: Number(oldPrice),
-      currency: 'MT',
+      currency,
       checkout_url: checkoutUrl,
       cover_image: coverImage,
       product_ids: selectedProductIds,
@@ -106,6 +119,8 @@ export const AdminBundlesPage: React.FC = () => {
               setSlug('');
               setDesc('');
               setSelectedProductIds([]);
+              setCurrency(settings.default_currency);
+              setCheckoutUrl(settings.escalepay_default_url);
               setIsEditing(true);
             }}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
@@ -162,7 +177,7 @@ export const AdminBundlesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-emerald-400 mb-1">Preço do Combo (MT)</label>
+                <label className="block text-xs font-semibold text-emerald-400 mb-1">Preço do Combo ({currency})</label>
                 <input
                   type="number"
                   required
@@ -173,7 +188,7 @@ export const AdminBundlesPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Preço Original Riscado (MT)</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Preço Original Riscado ({currency})</label>
                 <input
                   type="number"
                   value={oldPrice}
@@ -203,6 +218,16 @@ export const AdminBundlesPage: React.FC = () => {
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white"
               />
             </div>
+
+            <ImageField
+              label="Imagem do combo *"
+              folder="bundles"
+              value={coverImage}
+              onChange={setCoverImage}
+              onValidityChange={setCoverImageValid}
+              recordId={editingId || undefined}
+              required
+            />
 
             {/* Select Products included */}
             <div className="space-y-2">

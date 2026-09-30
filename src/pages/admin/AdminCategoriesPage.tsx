@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../lib/database';
 import { Category } from '../../types';
+import { ImageField } from '../../components/admin/ImageField';
 import { Plus, Trash2, Edit, Check, FolderTree } from 'lucide-react';
 
 export const AdminCategoriesPage: React.FC = () => {
@@ -12,6 +13,8 @@ export const AdminCategoriesPage: React.FC = () => {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [desc, setDesc] = useState('');
+  const [image, setImage] = useState('');
+  const [imageValid, setImageValid] = useState(true);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -27,6 +30,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!imageValid) return;
 
     const finalSlug = slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     await db.saveCategory({
@@ -34,12 +38,14 @@ export const AdminCategoriesPage: React.FC = () => {
       name,
       slug: finalSlug,
       description: desc,
+      image,
       active: true
     });
 
     setName('');
     setSlug('');
     setDesc('');
+    setImage('');
     setEditingId(null);
     loadData();
   };
@@ -49,6 +55,7 @@ export const AdminCategoriesPage: React.FC = () => {
     setName(cat.name);
     setSlug(cat.slug);
     setDesc(cat.description || '');
+    setImage(cat.image || '');
   };
 
   const handleDelete = async (id: string, catName: string) => {
@@ -91,6 +98,15 @@ export const AdminCategoriesPage: React.FC = () => {
               />
             </div>
 
+            <ImageField
+              label="Imagem da categoria"
+              folder="categories"
+              value={image}
+              onChange={setImage}
+              onValidityChange={setImageValid}
+              recordId={editingId || undefined}
+            />
+
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Slug URL</label>
               <input
@@ -129,6 +145,7 @@ export const AdminCategoriesPage: React.FC = () => {
                     setName('');
                     setSlug('');
                     setDesc('');
+                    setImage('');
                   }}
                   className="px-3 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-lg text-xs font-medium"
                 >
@@ -148,12 +165,15 @@ export const AdminCategoriesPage: React.FC = () => {
           <div className="divide-y divide-slate-800/80">
             {categories.map((c) => (
               <div key={c.id} className="p-4 flex items-center justify-between gap-4 hover:bg-slate-800/30">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-3">
+                  {c.image && <img src={c.image} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />}
+                  <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-white">{c.name}</span>
                     <span className="text-[10px] font-mono text-indigo-400">/categoria/{c.slug}</span>
                   </div>
                   <p className="text-xs text-slate-400 truncate mt-0.5">{c.description}</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">

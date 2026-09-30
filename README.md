@@ -47,7 +47,7 @@ A plataforma foi projetada seguindo as 5 regras fundamentais do projeto:
 - `/termos` — Termos de uso e direitos autorais
 
 ### Painel Administrativo
-- `/admin/login` — Autenticação de administradores (com acesso demo imediato)
+- `/admin/login` — Autenticação de administradores via Supabase
 - `/admin` — Dashboard principal com métricas, faturamento, leads e gráficos de tráfego UTM (TikTok, Facebook, Instagram, Google)
 - `/admin/products` — CRUD de produtos com ativação e destaques em 1 clique
 - `/admin/products/new` — Cadastro de novo produto com compositor de blocos
@@ -77,7 +77,8 @@ A plataforma foi projetada seguindo as 5 regras fundamentais do projeto:
    - Todas as tabelas (`products`, `categories`, `bundles`, `leads`, `orders`, `blog_posts`, etc.)
    - Índices de performance
    - Políticas de segurança Row Level Security (RLS)
-   - Dados iniciais de demonstração (IA Lucrativa, ChatGPT na Prática, Automação com IA, Combo IA Completa)
+   - Bucket `nextwin-library-media` para imagens, com leitura pública e upload restrito a admins/editores
+   - Se o banco já existe, execute somente a seção `19. STORAGE DE IMAGENS` no SQL Editor; não reaplique as policies anteriores.
 6. Vá em **Project Settings** -> **API**:
    - Copie o **Project URL**
    - Copie a chave **anon public**
@@ -87,7 +88,7 @@ A plataforma foi projetada seguindo as 5 regras fundamentais do projeto:
    VITE_SUPABASE_ANON_KEY=sua-chave-anon-public
    ```
 
-*Nota: Em ambiente de desenvolvimento local, a plataforma conta com um repositório inteligente com fallback em LocalStorage, permitindo testar e administrar tudo imediatamente mesmo antes de configurar o Supabase.*
+*Nota: Em ambiente de desenvolvimento local, a plataforma conta com fallback em LocalStorage para administrar dados antes de configurar o Supabase. Novas instalações iniciam sem registros de demonstração.*
 
 ---
 
@@ -126,9 +127,7 @@ Cliente redirecionado para o checkout seguro do EscalePay
 
 ---
 
-## 7. Credenciais de Teste do Painel Admin
+## 7. Acesso ao Painel Admin
 
 - **URL de Acesso**: `/admin/login`
-- **Email Padrão**: `admin@nextwin.com`
-- **Senha Padrão**: `admin123`
-- *Ou utilize o botão de acesso rápido "Entrar com Conta Demo de Administrador".*
+- Configure uma conta com perfil de administrador no Supabase para acessar o painel.

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
+import { ImageField } from '../../components/admin/ImageField';
+import { copyText } from '../../lib/clipboard';
 import { Product, Category, ProductBenefit, ProductFAQ, ProductType, ProductBonus, ProductBlockSettings } from '../../types';
 import { 
   Save, 
@@ -8,6 +11,10 @@ import {
   Plus, 
   Trash2, 
   Eye, 
+  Copy,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
   Sparkles, 
   Layers, 
   HelpCircle, 
@@ -19,6 +26,7 @@ import {
 export const AdminProductEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const isNew = !id || id === 'new';
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -28,15 +36,20 @@ export const AdminProductEditPage: React.FC = () => {
   // Product Form State
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [shortDesc, setShortDesc] = useState('');
   const [fullDesc, setFullDesc] = useState('');
   const [productType, setProductType] = useState<ProductType>('ebook');
-  const [price, setPrice] = useState<number>(147);
-  const [oldPrice, setOldPrice] = useState<number>(497);
+  const [price, setPrice] = useState<number | ''>('');
+  const [oldPrice, setOldPrice] = useState<number | ''>('');
   const [currency, setCurrency] = useState('MT');
-  const [coverImage, setCoverImage] = useState('/src/assets/images/cover_ia_lucrativa_1790756556925.jpg');
+  const [coverImage, setCoverImage] = useState('');
+  const [coverImageValid, setCoverImageValid] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryValidity, setGalleryValidity] = useState<boolean[]>([]);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState('https://checkout.escalepay.com/pay/');
-  const [categoryId, setCategoryId] = useState('cat-ia');
+  const [categoryId, setCategoryId] = useState('');
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
   const [published, setPublished] = useState(true);
@@ -94,6 +107,7 @@ export const AdminProductEditPage: React.FC = () => {
         if (found) {
           setName(found.name);
           setSlug(found.slug);
+          setSlugManuallyEdited(true);
           setShortDesc(found.short_description || '');
           setFullDesc(found.full_description || '');
           setProductType(found.product_type);
@@ -101,6 +115,10 @@ export const AdminProductEditPage: React.FC = () => {
           setOldPrice(found.old_price || 0);
           setCurrency(found.currency || 'MT');
           setCoverImage(found.cover_image);
+          setCoverImageValid(Boolean(found.cover_image));
+          const extraImages = (found.gallery || []).filter(image => image && image !== found.cover_image);
+          setGalleryImages(extraImages);
+          setGalleryValidity(extraImages.map(() => true));
           setCheckoutUrl(found.checkout_url);
           setCategoryId(found.category_id);
           setFeatured(found.featured);
@@ -126,6 +144,13 @@ export const AdminProductEditPage: React.FC = () => {
     }
   }, [id, isNew]);
 
+  useEffect(() => {
+    if (isNew) {
+      setCurrency(settings.default_currency);
+      setCheckoutUrl(settings.escalepay_default_url);
+    }
+  }, [isNew, settings.default_currency, settings.escalepay_default_url]);
+
   const handleGenerateSlug = () => {
     const generated = name
       .toLowerCase()
@@ -134,6 +159,23 @@ export const AdminProductEditPage: React.FC = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
     setSlug(generated);
+    setSlugManuallyEdited(false);
+  };
+
+  const handleAddGalleryImage = () => {
+    setGalleryImages(images => [...images, '']);
+    setGalleryValidity(validity => [...validity, true]);
+  };
+
+  const handleCopyPublicLink = async () => {
+    if (!slug) return;
+    try {
+      await copyText(`${window.location.origin}/produto/${slug}`);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      setCopiedLink(false);
+    }
   };
 
   const handleAddBenefit = () => {
@@ -178,7 +220,7 @@ export const AdminProductEditPage: React.FC = () => {
     if (!newBonusTitle.trim()) return;
     setBonuses([...bonuses, {
       title: newBonusTitle,
-      value: newBonusValue || '150 MT',
+      value: newBonusValue,
       description: newBonusDesc
     }]);
     setNewBonusTitle('');
@@ -196,8 +238,18 @@ export const AdminProductEditPage: React.FC = () => {
       alert('Preencha o nome do produto.');
       return;
     }
+    if (!coverImage.trim() || !coverImageValid || galleryValidity.some(isValid => !isValid)) {
+      alert('Selecione uma imagem ou informe uma URL válida.');
+      return;
+    }
 
-    const finalSlug = slug.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const baseSlug = slug.trim() || name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || `produto-${Date.now()}`;
+    const existingProducts = await db.getProducts();
+    let finalSlug = baseSlug;
+    let suffix = 2;
+    while (existingProducts.some(product => product.slug === finalSlug && product.id !== id)) {
+      finalSlug = `${baseSlug}-${suffix++}`;
+    }
     setIsSaving(true);
 
     try {
@@ -212,7 +264,7 @@ export const AdminProductEditPage: React.FC = () => {
         old_price: Number(oldPrice),
         currency,
         cover_image: coverImage,
-        gallery: [coverImage],
+        gallery: [...new Set([coverImage, ...galleryImages].filter(Boolean))],
         checkout_url: checkoutUrl,
         category_id: categoryId,
         featured,
@@ -228,6 +280,7 @@ export const AdminProductEditPage: React.FC = () => {
       };
 
       const saved = await db.saveProduct(productData);
+      setSlug(saved.slug);
 
       // Save benefits with new product ID
       for (const b of benefits) {
@@ -336,7 +389,13 @@ export const AdminProductEditPage: React.FC = () => {
                   required
                   placeholder="Ex: IA Lucrativa"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    const nextName = e.target.value;
+                    setName(nextName);
+                    if (!slugManuallyEdited) {
+                      setSlug(nextName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+                    }
+                  }}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -359,9 +418,20 @@ export const AdminProductEditPage: React.FC = () => {
                   required
                   placeholder="Ex: ia-lucrativa"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  onChange={(e) => { setSlug(e.target.value); setSlugManuallyEdited(true); }}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
+                {slug && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-slate-400">Link público: {window.location.origin}/produto/{slug}</span>
+                    <button type="button" onClick={handleCopyPublicLink} className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300">
+                      <Copy className="w-3.5 h-3.5" /> {copiedLink ? 'Link copiado!' : 'Copiar link'}
+                    </button>
+                    <a href={`/produto/${slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300">
+                      <ExternalLink className="w-3.5 h-3.5" /> Abrir produto
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -464,18 +534,76 @@ export const AdminProductEditPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Cover Image URL */}
-            <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Capa do Produto (URL ou Caminho) *
-              </label>
-              <input
-                type="text"
-                required
-                value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-300"
-              />
+            <ImageField
+              label="Imagem principal do produto *"
+              folder="products"
+              value={coverImage}
+              onChange={setCoverImage}
+              onValidityChange={setCoverImageValid}
+              recordId={id}
+              required
+            />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Imagens adicionais</h3>
+                <button type="button" onClick={handleAddGalleryImage} className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300">
+                  <Plus className="w-3.5 h-3.5" /> Adicionar imagem
+                </button>
+              </div>
+              {galleryImages.map((image, index) => (
+                <div key={`${index}-${image}`} className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <ImageField
+                      label={`Imagem adicional ${index + 1}`}
+                      folder="products"
+                      value={image}
+                      onChange={(nextImage) => setGalleryImages(images => images.map((current, currentIndex) => currentIndex === index ? nextImage : current))}
+                      onValidityChange={(isValid) => setGalleryValidity(validity => validity.map((current, currentIndex) => currentIndex === index ? isValid : current))}
+                      recordId={id}
+                    />
+                  </div>
+                  <div className="mt-8 flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => {
+                        if (index === 0) return;
+                        setGalleryImages(images => { const next = [...images]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; });
+                        setGalleryValidity(validity => { const next = [...validity]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; });
+                      }}
+                      className="p-1.5 text-slate-500 hover:text-white disabled:opacity-30"
+                      title="Mover imagem para cima"
+                    ><ChevronUp className="w-4 h-4" /></button>
+                    <button
+                      type="button"
+                      disabled={index === galleryImages.length - 1}
+                      onClick={() => {
+                        if (index === galleryImages.length - 1) return;
+                        setGalleryImages(images => { const next = [...images]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; });
+                        setGalleryValidity(validity => { const next = [...validity]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; });
+                      }}
+                      className="p-1.5 text-slate-500 hover:text-white disabled:opacity-30"
+                      title="Mover imagem para baixo"
+                    ><ChevronDown className="w-4 h-4" /></button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!galleryValidity[index]) return;
+                        setGalleryImages(images => [...images.filter((_, currentIndex) => currentIndex !== index), coverImage].filter(Boolean));
+                        setGalleryValidity(validity => [...validity.filter((_, currentIndex) => currentIndex !== index), true]);
+                        setCoverImage(image);
+                        setCoverImageValid(Boolean(image));
+                      }}
+                      className="px-2 py-1.5 text-[11px] text-indigo-400 hover:text-indigo-300"
+                      title="Definir como imagem principal"
+                    >Principal</button>
+                    <button type="button" onClick={() => { setGalleryImages(images => images.filter((_, currentIndex) => currentIndex !== index)); setGalleryValidity(validity => validity.filter((_, currentIndex) => currentIndex !== index)); }} className="p-1.5 text-slate-500 hover:text-rose-400" title="Remover imagem adicional">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Descriptions */}

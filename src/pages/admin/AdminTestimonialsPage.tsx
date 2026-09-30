@@ -10,7 +10,7 @@ export const AdminTestimonialsPage: React.FC = () => {
   const [role, setRole] = useState('');
   const [company, setCompany] = useState('');
   const [text, setText] = useState('');
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [productId, setProductId] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -26,7 +26,7 @@ export const AdminTestimonialsPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !text) return;
+    if (!name || !text || !rating) return;
 
     await db.saveTestimonial({
       name,
@@ -121,10 +121,12 @@ export const AdminTestimonialsPage: React.FC = () => {
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Avaliação (Estrelas)</label>
               <select
+                required
                 value={rating}
                 onChange={(e) => setRating(Number(e.target.value))}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white"
               >
+                <option value={0} disabled>Selecione uma avaliação</option>
                 <option value={5}>5 Estrelas (Excelente)</option>
                 <option value={4}>4 Estrelas (Muito Bom)</option>
                 <option value={3}>3 Estrelas</option>
@@ -159,7 +161,7 @@ export const AdminTestimonialsPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-amber-400">
-                  {Array.from({ length: t.rating || 5 }).map((_, i) => (
+                  {Array.from({ length: t.rating }).map((_, i) => (
                     <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   ))}
                 </div>

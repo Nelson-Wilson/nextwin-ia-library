@@ -36,9 +36,7 @@ export const Header: React.FC = () => {
     setMobileOpen(false);
   };
 
-  const account = isAdmin
-    ? { to: '/admin', label: 'Painel', icon: true }
-    : { to: '/admin/login', label: 'Entrar', icon: false };
+  const account = isAdmin ? { to: '/admin', label: 'Painel', icon: true } : null;
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur border-b border-line">
@@ -87,13 +85,15 @@ export const Header: React.FC = () => {
             <ShoppingCart className="w-[18px] h-[18px]" />
           </Link>
 
-          <Link
-            to={account.to}
-            className="hidden sm:inline-flex items-center gap-1.5 px-5 py-1.5 text-xs font-semibold text-brand border border-brand rounded-full hover:bg-brand-soft transition-colors"
-          >
-            {account.icon && <ShieldCheck className="w-3.5 h-3.5" />}
-            {account.label}
-          </Link>
+          {account && (
+            <Link
+              to={account.to}
+              className="hidden sm:inline-flex items-center gap-1.5 px-5 py-1.5 text-xs font-semibold text-brand border border-brand rounded-full hover:bg-brand-soft transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              {account.label}
+            </Link>
+          )}
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -131,13 +131,15 @@ export const Header: React.FC = () => {
               </Link>
             ))}
           </nav>
-          <Link
-            to={account.to}
-            onClick={() => setMobileOpen(false)}
-            className="block text-center px-4 py-2.5 text-sm font-semibold text-brand border border-brand rounded-full"
-          >
-            {account.label}
-          </Link>
+          {account && (
+            <Link
+              to={account.to}
+              onClick={() => setMobileOpen(false)}
+              className="block text-center px-4 py-2.5 text-sm font-semibold text-brand border border-brand rounded-full"
+            >
+              Painel
+            </Link>
+          )}
         </div>
       )}
     </header>

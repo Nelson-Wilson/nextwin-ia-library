@@ -7,8 +7,8 @@ export const AdminCouponsPage: React.FC = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState<Coupon['discount_type']>('percentage');
-  const [discountValue, setDiscountValue] = useState(10);
-  const [maxUses, setMaxUses] = useState(100);
+  const [discountValue, setDiscountValue] = useState<number | ''>('');
+  const [maxUses, setMaxUses] = useState<number | ''>('');
   const [isEditing, setIsEditing] = useState(false);
 
   const loadData = async () => {

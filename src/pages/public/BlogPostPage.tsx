@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import { db } from '../../lib/database';
 import { BlogPost } from '../../types';
 import { SafeImage } from '../../components/ui/SafeImage';
@@ -7,6 +8,7 @@ import { ArrowLeft, Calendar, User, Clock, Share2 } from 'lucide-react';
 
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { settings } = useSettings();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -17,11 +19,11 @@ export const BlogPostPage: React.FC = () => {
     db.getBlogPostBySlug(slug).then((data) => {
       if (data) {
         setPost(data);
-        document.title = data.seo_title || `${data.title} | Blog NextWin`;
+        document.title = data.seo_title || `${data.title} | ${settings.site_name}`;
       }
       setIsLoading(false);
     });
-  }, [slug]);
+  }, [slug, settings.site_name]);
 
   if (isLoading) {
     return (

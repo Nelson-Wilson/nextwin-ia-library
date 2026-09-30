@@ -15,8 +15,8 @@ export const TestimonialCard: React.FC<{ testimonial: Testimonial }> = ({ testim
       )}
       <div>
         <p className="text-xs font-bold text-ink">{t.name}</p>
-        <div className="flex gap-0.5" aria-label={`${t.rating || 5} de 5 estrelas`}>
-          {Array.from({ length: t.rating || 5 }).map((_, i) => (
+        <div className="flex gap-0.5" aria-label={`${t.rating} de 5 estrelas`}>
+          {Array.from({ length: t.rating }).map((_, i) => (
             <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
           ))}
         </div>

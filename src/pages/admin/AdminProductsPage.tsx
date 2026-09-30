@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../../lib/database';
 import { Product } from '../../types';
 import { SafeImage } from '../../components/ui/SafeImage';
+import { copyText } from '../../lib/clipboard';
 import { 
   Plus, 
   Search, 
@@ -10,6 +11,7 @@ import {
   Edit, 
   Trash2, 
   Check, 
+  Copy,
   X, 
   Sparkles,
   ArrowUpRight
@@ -19,6 +21,7 @@ export const AdminProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
 
   const loadProducts = async () => {
     setIsLoading(true);
@@ -46,6 +49,16 @@ export const AdminProductsPage: React.FC = () => {
   const handleToggleFeatured = async (product: Product) => {
     await db.saveProduct({ ...product, featured: !product.featured });
     loadProducts();
+  };
+
+  const handleCopyProductLink = async (product: Product) => {
+    try {
+      await copyText(`${window.location.origin}/produto/${product.slug}`);
+      setCopiedProductId(product.id);
+      window.setTimeout(() => setCopiedProductId(null), 2500);
+    } catch {
+      setCopiedProductId(null);
+    }
   };
 
   const filtered = products.filter(p => 
@@ -191,6 +204,16 @@ export const AdminProductsPage: React.FC = () => {
                     {/* Actions */}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyProductLink(product)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                          title={copiedProductId === product.id ? 'Link copiado!' : 'Copiar link público'}
+                          aria-label={copiedProductId === product.id ? 'Link copiado!' : 'Copiar link público'}
+                        >
+                          {copiedProductId === product.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        {copiedProductId === product.id && <span role="status" className="text-[10px] text-emerald-400">Link copiado!</span>}
                         <Link
                           to={`/produto/${product.slug}`}
                           target="_blank"
