@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShieldCheck, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export const AdminLoginPage: React.FC = () => {
-  const { signInAdmin, simulateAdminLogin, isAdmin } = useAuth();
+  const { signInAdmin, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('admin@nextwin.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,11 +32,6 @@ export const AdminLoginPage: React.FC = () => {
     } else {
       setError(res.error || 'Credenciais inválidas.');
     }
-  };
-
-  const handleInstantDemo = () => {
-    simulateAdminLogin();
-    navigate('/admin', { replace: true });
   };
 
   return (
@@ -106,21 +101,6 @@ export const AdminLoginPage: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Access */}
-          <div className="pt-4 border-t border-slate-800 space-y-3">
-            <div className="text-center text-[11px] text-slate-500">
-              Acesso de demonstração rápido para testes:
-            </div>
-            <button
-              type="button"
-              onClick={handleInstantDemo}
-              className="w-full py-2 px-3 text-xs font-semibold text-indigo-300 bg-indigo-950/60 border border-indigo-800/60 rounded-lg hover:bg-indigo-900/60 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Entrar com Conta Demo de Administrador</span>
-            </button>
-          </div>
 
         </div>
 
