@@ -1,0 +1,6 @@
+{
+  "name": "NextWin AI Library",
+  "description": "Plataforma de e-commerce e CMS dinâmico para ebooks, packs de prompts, templates e cursos de Inteligência Artificial com integração EscalePay e Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
