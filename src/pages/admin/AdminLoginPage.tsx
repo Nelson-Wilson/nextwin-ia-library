@@ -45,8 +45,7 @@ export const AdminLoginPage: React.FC = () => {
           <Link to="/" className="inline-block text-xl font-extrabold text-white font-display">
             NextWin AI Library
           </Link>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Painel Administrativo</h1>
-          <p className="text-xs text-slate-400">Entre com suas credenciais de administrador</p>
+      
         </div>
 
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
